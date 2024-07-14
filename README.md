@@ -168,7 +168,21 @@ root@router1:~# systemctl enable --now frr
 - 10.0.11.0/30
 - 10.0.13.0/30
 
-
+Убедиться в этом можно пропинговав интерфейсы роутеров и/или посмотреть таблицу маршрутизации на наличие указанных маршрутов:
+```
+root@router1:~# ip r
+default via 10.0.2.2 dev enp0s3 proto dhcp src 10.0.2.15 metric 100 
+10.0.2.0/24 dev enp0s3 proto kernel scope link src 10.0.2.15 
+10.0.2.2 dev enp0s3 proto dhcp scope link src 10.0.2.15 metric 100 
+10.0.10.0/30 dev enp0s8 proto kernel scope link src 10.0.10.1 
+10.0.11.0/30 nhid 32 proto ospf metric 20 
+	nexthop via 10.0.10.2 dev enp0s8 weight 1 
+	nexthop via 10.0.12.2 dev enp0s9 weight 1 
+10.0.12.0/30 dev enp0s9 proto kernel scope link src 10.0.12.1 
+192.168.10.0/24 dev enp0s10 proto kernel scope link src 192.168.10.1 
+192.168.20.0/24 nhid 28 via 10.0.10.2 dev enp0s8 proto ospf metric 20 
+192.168.30.0/24 nhid 33 via 10.0.12.2 dev enp0s9 proto ospf metric 20 
+```
 
 
 
