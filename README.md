@@ -183,6 +183,159 @@ default via 10.0.2.2 dev enp0s3 proto dhcp src 10.0.2.15 metric 100
 192.168.20.0/24 nhid 28 via 10.0.10.2 dev enp0s8 proto ospf metric 20 
 192.168.30.0/24 nhid 33 via 10.0.12.2 dev enp0s9 proto ospf metric 20 
 ```
+```
+root@router1:~# ping 10.0.11.1
+PING 10.0.11.1 (10.0.11.1) 56(84) bytes of data.
+64 bytes from 10.0.11.1: icmp_seq=1 ttl=64 time=1.12 ms
+64 bytes from 10.0.11.1: icmp_seq=2 ttl=64 time=1.09 ms
+64 bytes from 10.0.11.1: icmp_seq=3 ttl=64 time=1.08 ms
+```
+```
+root@router1:~# vtysh
 
+Hello, this is FRRouting (version 10.0.1).
+Copyright 1996-2005 Kunihiro Ishiguro, et al.
 
+router1# show ip route ospf
+Codes: K - kernel route, C - connected, L - local, S - static,
+       R - RIP, O - OSPF, I - IS-IS, B - BGP, E - EIGRP, N - NHRP,
+       T - Table, v - VNC, V - VNC-Direct, A - Babel, F - PBR,
+       f - OpenFabric, t - Table-Direct,
+       > - selected route, * - FIB route, q - queued, r - rejected, b - backup
+       t - trapped, o - offload failure
 
+O   10.0.10.0/30 [110/100] is directly connected, enp0s8, weight 1, 13:07:43
+O>* 10.0.11.0/30 [110/200] via 10.0.10.2, enp0s8, weight 1, 13:06:43
+  *                        via 10.0.12.2, enp0s9, weight 1, 13:06:43
+O   10.0.12.0/30 [110/100] is directly connected, enp0s9, weight 1, 13:07:43
+O   192.168.10.0/24 [110/100] is directly connected, enp0s10, weight 1, 13:07:43
+O>* 192.168.20.0/24 [110/200] via 10.0.10.2, enp0s8, weight 1, 13:06:58
+O>* 192.168.30.0/24 [110/200] via 10.0.12.2, enp0s9, weight 1, 13:06:43
+```
+
+__2.2. Настройка ассиметричного роутинга__
+
+Разрешаем ассиметричную маршрутизацию:
+```
+root@router1:~# sysctl net.ipv4.conf.all.rp_filter=0
+```
+Выбираем один из роутеров, на котором изменим «стоимость интерфейса». Например, поменяем стоимость интерфейса enp0s8 на router1:
+```
+root@router1:~# vtysh
+
+Hello, this is FRRouting (version 10.0.1).
+Copyright 1996-2005 Kunihiro Ishiguro, et al.
+
+router1# conf t
+router1(config)# int enp0s8
+router1(config-if)# ip ospf cost 1000
+router1(config-if)# exit
+router1(config)# exit
+router1# show ip route ospf
+Codes: K - kernel route, C - connected, L - local, S - static,
+       R - RIP, O - OSPF, I - IS-IS, B - BGP, E - EIGRP, N - NHRP,
+       T - Table, v - VNC, V - VNC-Direct, A - Babel, F - PBR,
+       f - OpenFabric, t - Table-Direct,
+       > - selected route, * - FIB route, q - queued, r - rejected, b - backup
+       t - trapped, o - offload failure
+
+O   10.0.10.0/30 [110/300] via 10.0.12.2, enp0s9, weight 1, 00:00:40
+O>* 10.0.11.0/30 [110/200] via 10.0.12.2, enp0s9, weight 1, 00:00:40
+O   10.0.12.0/30 [110/100] is directly connected, enp0s9, weight 1, 13:19:55
+O   192.168.10.0/24 [110/100] is directly connected, enp0s10, weight 1, 13:19:55
+O>* 192.168.20.0/24 [110/300] via 10.0.12.2, enp0s9, weight 1, 00:00:40
+O>* 192.168.30.0/24 [110/200] via 10.0.12.2, enp0s9, weight 1, 13:18:55
+```
+Видим пакеты с router1 к сетям router2 теперь пойдут через router3.  
+Ответные пакеты c router2 к router1 пойдут по прежнему пути, сразу на router1:
+```
+root@router2:~# vtysh
+
+Hello, this is FRRouting (version 10.0.1).
+Copyright 1996-2005 Kunihiro Ishiguro, et al.
+
+router2# show ip route ospf 
+Codes: K - kernel route, C - connected, L - local, S - static,
+       R - RIP, O - OSPF, I - IS-IS, B - BGP, E - EIGRP, N - NHRP,
+       T - Table, v - VNC, V - VNC-Direct, A - Babel, F - PBR,
+       f - OpenFabric, t - Table-Direct,
+       > - selected route, * - FIB route, q - queued, r - rejected, b - backup
+       t - trapped, o - offload failure
+
+O   10.0.10.0/30 [110/100] is directly connected, enp0s8, weight 1, 13:31:45
+O   10.0.11.0/30 [110/100] is directly connected, enp0s9, weight 1, 13:31:55
+O>* 10.0.12.0/30 [110/200] via 10.0.10.1, enp0s8, weight 1, 13:31:01
+  *                        via 10.0.11.1, enp0s9, weight 1, 13:31:01
+O>* 192.168.10.0/24 [110/200] via 10.0.10.1, enp0s8, weight 1, 13:31:35
+O   192.168.20.0/24 [110/100] is directly connected, enp0s10, weight 1, 13:31:55
+O>* 192.168.30.0/24 [110/200] via 10.0.11.1, enp0s9, weight 1, 13:31:01
+```
+Для проверки запускаем на router1 пинг от 192.168.10.1 до 192.168.20.1:
+```
+root@router1:~# ping -I 192.168.10.1 192.168.20.1
+```
+На router2 запускаем tcpdump, который будет смотреть трафик только на порту enp0s9:
+```
+root@router2:~# tcpdump -i enp0s9
+tcpdump: verbose output suppressed, use -v or -vv for full protocol decode
+listening on enp0s9, link-type EN10MB (Ethernet), capture size 262144 bytes
+07:32:24.272922 IP 192.168.10.1 > router2: ICMP echo request, id 4, seq 32, length 64
+07:32:25.275290 IP 192.168.10.1 > router2: ICMP echo request, id 4, seq 33, length 64
+07:32:25.687058 IP router2 > ospf-all.mcast.net: OSPFv2, Hello, length 48
+07:32:26.277340 IP 192.168.10.1 > router2: ICMP echo request, id 4, seq 34, length 64
+07:32:27.220286 IP 10.0.11.1 > ospf-all.mcast.net: OSPFv2, Hello, length 48
+07:32:27.279791 IP 192.168.10.1 > router2: ICMP echo request, id 4, seq 35, length 64
+07:32:28.284012 IP 192.168.10.1 > router2: ICMP echo request, id 4, seq 36, length 64
+07:32:29.287697 IP 192.168.10.1 > router2: ICMP echo request, id 4, seq 37, length 64
+07:32:30.289778 IP 192.168.10.1 > router2: ICMP echo request, id 4, seq 38, length 64
+07:32:31.294003 IP 192.168.10.1 > router2: ICMP echo request, id 4, seq 39, length 64
+```
+Видим что запросы приходят на интерфейс enp0s9.
+
+На router2 запускаем tcpdump, который будет смотреть трафик только на порту enp0s8:
+```
+root@router2:~# tcpdump -i enp0s8
+tcpdump: verbose output suppressed, use -v or -vv for full protocol decode
+listening on enp0s8, link-type EN10MB (Ethernet), capture size 262144 bytes
+07:34:21.611560 IP router2 > 192.168.10.1: ICMP echo reply, id 5, seq 6, length 64
+07:34:21.780555 ARP, Request who-has 10.0.10.1 tell router2, length 28
+07:34:21.781597 ARP, Reply 10.0.10.1 is-at 08:00:27:bb:7c:3c (oui Unknown), length 46
+07:34:22.614771 IP router2 > 192.168.10.1: ICMP echo reply, id 5, seq 7, length 64
+07:34:23.639192 IP router2 > 192.168.10.1: ICMP echo reply, id 5, seq 8, length 64
+07:34:24.664133 IP router2 > 192.168.10.1: ICMP echo reply, id 5, seq 9, length 64
+07:34:25.666114 IP router2 > 192.168.10.1: ICMP echo reply, id 5, seq 10, length 64
+07:34:25.820337 IP router2 > ospf-all.mcast.net: OSPFv2, Hello, length 48
+07:34:26.679309 IP router2 > 192.168.10.1: ICMP echo reply, id 5, seq 11, length 64
+```
+Видми что ответы уходят с интерфейса enp0s9. 
+
+Таким образом мы имеем ассиметричную маршрутизацию. 
+
+__2.3. Настройка симметичного роутинга__ 
+
+Так как у нас уже есть один «дорогой» интерфейс, нам потребуется добавить ещё один дорогой интерфейс, чтобы у нас перестала работать ассиметричная маршрутизация. 
+
+Так как в прошлом задании мы заметили что router2 будет отправлять обратно трафик через порт enp0s8, мы также должны сделать его дорогим и далее проверить, что теперь используется симметричная маршрутизация:
+
+Поменяем стоимость интерфейса enp0s8 на router2:
+```
+router2# conf t
+router2(config)# interface enp0s8
+router2(config-if)# ip ospf cost 1000
+router2(config-if)# end
+router2# show ip route ospf 
+Codes: K - kernel route, C - connected, L - local, S - static,
+       R - RIP, O - OSPF, I - IS-IS, B - BGP, E - EIGRP, N - NHRP,
+       T - Table, v - VNC, V - VNC-Direct, A - Babel, F - PBR,
+       f - OpenFabric, t - Table-Direct,
+       > - selected route, * - FIB route, q - queued, r - rejected, b - backup
+       t - trapped, o - offload failure
+
+O   10.0.10.0/30 [110/1000] is directly connected, enp0s8, weight 1, 00:00:12
+O   10.0.11.0/30 [110/100] is directly connected, enp0s9, weight 1, 13:47:05
+O>* 10.0.12.0/30 [110/200] via 10.0.11.1, enp0s9, weight 1, 00:00:12
+O>* 192.168.10.0/24 [110/300] via 10.0.11.1, enp0s9, weight 1, 00:00:12
+O   192.168.20.0/24 [110/100] is directly connected, enp0s10, weight 1, 13:47:05
+O>* 192.168.30.0/24 [110/200] via 10.0.11.1, enp0s9, weight 1, 13:46:11
+```
+Видим, что маршрут до сети 192.168.10.0/30 пойдёт через router2.
