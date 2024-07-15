@@ -70,7 +70,7 @@ root@router1:~# ip a | grep inet
     inet6 fe80::a00:27ff:fe24:e5ba/64 scope link 
 ```
 - зайти в интерфейс FRR и посмотреть информацию об интерфейсах:
-```console
+```
 root@router1:~# vtysh
 
 Hello, this is FRRouting (version 10.0.1).
@@ -190,7 +190,7 @@ PING 10.0.11.1 (10.0.11.1) 56(84) bytes of data.
 64 bytes from 10.0.11.1: icmp_seq=2 ttl=64 time=1.09 ms
 64 bytes from 10.0.11.1: icmp_seq=3 ttl=64 time=1.08 ms
 ```
-```console
+```
 root@router1:~# vtysh
 
 Hello, this is FRRouting (version 10.0.1).
@@ -220,7 +220,7 @@ __2.2. Настройка ассиметричного роутинга__
 root@router1:~# sysctl net.ipv4.conf.all.rp_filter=0
 ```
 Выбираем один из роутеров, на котором изменим «стоимость интерфейса». Например, поменяем стоимость интерфейса enp0s8 на router1:
-```console
+```
 root@router1:~# vtysh
 
 Hello, this is FRRouting (version 10.0.1).
@@ -248,7 +248,7 @@ O>* 192.168.30.0/24 [110/200] via 10.0.12.2, enp0s9, weight 1, 13:18:55
 ```
 Видим пакеты с router1 к сетям router2 теперь пойдут через router3.  
 Ответные пакеты c router2 к router1 пойдут по прежнему пути, сразу на router1:
-```console
+```
 root@router2:~# vtysh
 
 Hello, this is FRRouting (version 10.0.1).
@@ -318,7 +318,7 @@ __2.3. Настройка симметичного роутинга__
 Так как в прошлом задании мы заметили что router2 будет отправлять обратно трафик через порт enp0s8, мы также должны сделать его дорогим и далее проверить, что теперь используется симметричная маршрутизация:
 
 Поменяем стоимость интерфейса enp0s8 на router2:
-```console
+```
 router2# conf t
 router2(config)# interface enp0s8
 router2(config-if)# ip ospf cost 1000
