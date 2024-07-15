@@ -16,7 +16,7 @@ __1. Разворачиваем 3 виртуальные машины__
 
 ![image](https://github.com/user-attachments/assets/57067149-7951-412e-9323-98d15b248e8b)
 
-```
+```console
 $ vagrant up
 ```
 Результатом выполнения данной команды будут 3 созданные виртуальные машины, которые соединены между собой сетями (10.0.10.0/30, 10.0.11.0/30 и 10.0.12.0/30). У каждого роутера есть дополнительная сеть:
@@ -29,19 +29,19 @@ $ vagrant up
 __2.1. Настройка OSPF между машинами на базе пакета FRR__
 
 1) Отключаем файерволл ufw и удаляем его из автозагрузки:
-```
+```console
 root@router1:~# systemctl stop ufw
 root@router1:~# systemctl disable ufw
 ```
 2) Устанавливаем пакет FRR:
-```
+```console
 root@router1:~# curl -s https://deb.frrouting.org/frr/keys.asc | sudo apt-key add -
 root@router1:~# echo deb https://deb.frrouting.org/frr $(lsb_release -s -c) frr-stable > /etc/apt/sources.list.d/frr.list
 root@router1:~# sudo apt update
 root@router1:~# apt install frr frr-pythontools
 ```
 3) Разрешаем (включаем) маршрутизацию транзитных пакетов:
-```
+```console
 root@router1:~# echo "net.ipv4.conf.all.forwarding = 1" >> /etc/sysctl.conf
 root@router1:~# sysctl -p
 ```
@@ -56,7 +56,7 @@ ripd=no
 ```
 5) Для настройки OSPF нам потребуется создать файл /etc/frr/frr.conf который будет содержать в себе информацию о требуемых интерфейсах и OSPF. Для начала нам необходимо узнать имена интерфейсов и их адреса. Сделать это можно двумя способами:
 - посмотреть с помощью команды `ip a | grep inet`:
-```
+```console
 root@router1:~# ip a | grep inet
     inet 127.0.0.1/8 scope host lo
     inet6 ::1/128 scope host 
@@ -70,7 +70,7 @@ root@router1:~# ip a | grep inet
     inet6 fe80::a00:27ff:fe24:e5ba/64 scope link 
 ```
 - зайти в интерфейс FRR и посмотреть информацию об интерфейсах:
-```
+```console
 root@router1:~# vtysh
 
 Hello, this is FRRouting (version 10.0.1).
@@ -157,7 +157,7 @@ router ospf
 Если права или владелец файла указан неправильно, то нужно поменять владельца и назначить правильные права.
 
 7) Перезапускаем FRR и добавляем его в автозагрузку:
-```
+```console
 root@router1:~# systemctl enable --now frr
 ```
 Если мы правильно настроили OSPF, то с любого хоста нам должны быть доступны сети:
@@ -169,7 +169,7 @@ root@router1:~# systemctl enable --now frr
 - 10.0.13.0/30
 
 Убедиться в этом можно пропинговав интерфейсы роутеров и/или посмотреть таблицу маршрутизации на наличие указанных маршрутов:
-```
+```console
 root@router1:~# ip r
 default via 10.0.2.2 dev enp0s3 proto dhcp src 10.0.2.15 metric 100 
 10.0.2.0/24 dev enp0s3 proto kernel scope link src 10.0.2.15 
@@ -183,14 +183,14 @@ default via 10.0.2.2 dev enp0s3 proto dhcp src 10.0.2.15 metric 100
 192.168.20.0/24 nhid 28 via 10.0.10.2 dev enp0s8 proto ospf metric 20 
 192.168.30.0/24 nhid 33 via 10.0.12.2 dev enp0s9 proto ospf metric 20 
 ```
-```
+```console
 root@router1:~# ping 10.0.11.1
 PING 10.0.11.1 (10.0.11.1) 56(84) bytes of data.
 64 bytes from 10.0.11.1: icmp_seq=1 ttl=64 time=1.12 ms
 64 bytes from 10.0.11.1: icmp_seq=2 ttl=64 time=1.09 ms
 64 bytes from 10.0.11.1: icmp_seq=3 ttl=64 time=1.08 ms
 ```
-```
+```console
 root@router1:~# vtysh
 
 Hello, this is FRRouting (version 10.0.1).
@@ -216,11 +216,11 @@ O>* 192.168.30.0/24 [110/200] via 10.0.12.2, enp0s9, weight 1, 13:06:43
 __2.2. Настройка ассиметричного роутинга__
 
 Разрешаем ассиметричную маршрутизацию:
-```
+```console
 root@router1:~# sysctl net.ipv4.conf.all.rp_filter=0
 ```
 Выбираем один из роутеров, на котором изменим «стоимость интерфейса». Например, поменяем стоимость интерфейса enp0s8 на router1:
-```
+```console
 root@router1:~# vtysh
 
 Hello, this is FRRouting (version 10.0.1).
