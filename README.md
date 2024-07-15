@@ -248,7 +248,7 @@ O>* 192.168.30.0/24 [110/200] via 10.0.12.2, enp0s9, weight 1, 13:18:55
 ```
 Видим пакеты с router1 к сетям router2 теперь пойдут через router3.  
 Ответные пакеты c router2 к router1 пойдут по прежнему пути, сразу на router1:
-```
+```console
 root@router2:~# vtysh
 
 Hello, this is FRRouting (version 10.0.1).
@@ -271,11 +271,11 @@ O   192.168.20.0/24 [110/100] is directly connected, enp0s10, weight 1, 13:31:55
 O>* 192.168.30.0/24 [110/200] via 10.0.11.1, enp0s9, weight 1, 13:31:01
 ```
 Для проверки запускаем на router1 пинг от 192.168.10.1 до 192.168.20.1:
-```
+```console
 root@router1:~# ping -I 192.168.10.1 192.168.20.1
 ```
 На router2 запускаем tcpdump, который будет смотреть трафик только на порту enp0s9:
-```
+```console
 root@router2:~# tcpdump -i enp0s9
 tcpdump: verbose output suppressed, use -v or -vv for full protocol decode
 listening on enp0s9, link-type EN10MB (Ethernet), capture size 262144 bytes
@@ -293,7 +293,7 @@ listening on enp0s9, link-type EN10MB (Ethernet), capture size 262144 bytes
 Видим что запросы приходят на интерфейс enp0s9.
 
 На router2 запускаем tcpdump, который будет смотреть трафик только на порту enp0s8:
-```
+```console
 root@router2:~# tcpdump -i enp0s8
 tcpdump: verbose output suppressed, use -v or -vv for full protocol decode
 listening on enp0s8, link-type EN10MB (Ethernet), capture size 262144 bytes
@@ -318,7 +318,7 @@ __2.3. Настройка симметичного роутинга__
 Так как в прошлом задании мы заметили что router2 будет отправлять обратно трафик через порт enp0s8, мы также должны сделать его дорогим и далее проверить, что теперь используется симметричная маршрутизация:
 
 Поменяем стоимость интерфейса enp0s8 на router2:
-```
+```console
 router2# conf t
 router2(config)# interface enp0s8
 router2(config-if)# ip ospf cost 1000
